@@ -4042,7 +4042,7 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
             // "none" filter turns into a memcpy here; make that explicit.
             case STBI__F_none:         memcpy(cur, raw, nk); break;
             CASE(STBI__F_sub)          cur[k] = STBI__BYTECAST(raw[k] + cur[k-filter_bytes]); break;
-#if defined(_M_ARM64) || defined(__aarch64__)
+#if (defined(_M_ARM64) || defined(__aarch64__)) && !defined(STBI_NO_SIMD)
             case STBI__F_up: {
                // "up" filter has no intra-row dependency (prior[] is the
                // already-fully-decoded previous scanline), so the whole row
