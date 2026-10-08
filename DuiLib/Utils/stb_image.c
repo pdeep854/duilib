@@ -4042,7 +4042,24 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
             // "none" filter turns into a memcpy here; make that explicit.
             case STBI__F_none:         memcpy(cur, raw, nk); break;
             CASE(STBI__F_sub)          cur[k] = STBI__BYTECAST(raw[k] + cur[k-filter_bytes]); break;
+#if defined(_M_ARM64) || defined(__aarch64__)
+            case STBI__F_up: {
+               // "up" filter has no intra-row dependency (prior[] is the
+               // already-fully-decoded previous scanline), so the whole row
+               // is a plain wraparound byte add -- a direct, bit-exact match
+               // for vaddq_u8 (both are modulo-256 unsigned addition).
+               int k2 = 0;
+               for (; k2 + 16 <= nk; k2 += 16) {
+                  uint8x16_t vRaw = vld1q_u8(raw + k2);
+                  uint8x16_t vPrior = vld1q_u8(prior + k2);
+                  vst1q_u8(cur + k2, vaddq_u8(vRaw, vPrior));
+               }
+               for (; k2 < nk; ++k2) cur[k2] = STBI__BYTECAST(raw[k2] + prior[k2]);
+               break;
+            }
+#else
             CASE(STBI__F_up)           cur[k] = STBI__BYTECAST(raw[k] + prior[k]); break;
+#endif
             CASE(STBI__F_avg)          cur[k] = STBI__BYTECAST(raw[k] + ((prior[k] + cur[k-filter_bytes])>>1)); break;
             CASE(STBI__F_paeth)        cur[k] = STBI__BYTECAST(raw[k] + stbi__paeth(cur[k-filter_bytes],prior[k],prior[k-filter_bytes])); break;
             CASE(STBI__F_avg_first)    cur[k] = STBI__BYTECAST(raw[k] + (cur[k-filter_bytes] >> 1)); break;
