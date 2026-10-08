@@ -28,3 +28,6 @@ FlashDemo/FlashDemo.vcproj.wengmq-PC.wengmq.user
 QQDemo/Debug/mt.dep
 *.dep
 *.map
+
+# wos-porter agent scratch state (not part of the port)
+.copilot/

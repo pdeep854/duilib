@@ -16,15 +16,31 @@ using namespace DuiLib;
 
 #ifdef _DEBUG
 #   ifdef _UNICODE
-#       pragma comment(lib, "..\\Lib\\DuiLib_ud.lib")
+#       if defined(_M_ARM64) || defined(_M_ARM64EC)
+#           pragma comment(lib, "..\\Lib\\ARM64\\DuiLib_ud.lib")
+#       else
+#           pragma comment(lib, "..\\Lib\\DuiLib_ud.lib")
+#       endif
 #   else
-#       pragma comment(lib, "..\\Lib\\DuiLib_d.lib")
+#       if defined(_M_ARM64) || defined(_M_ARM64EC)
+#           pragma comment(lib, "..\\Lib\\ARM64\\DuiLib_d.lib")
+#       else
+#           pragma comment(lib, "..\\Lib\\DuiLib_d.lib")
+#       endif
 #   endif
 #else
 #   ifdef _UNICODE
-#       pragma comment(lib, "..\\Lib\\DuiLib_u.lib")
+#       if defined(_M_ARM64) || defined(_M_ARM64EC)
+#           pragma comment(lib, "..\\Lib\\ARM64\\DuiLib_u.lib")
+#       else
+#           pragma comment(lib, "..\\Lib\\DuiLib_u.lib")
+#       endif
 #   else
-#       pragma comment(lib, "..\\Lib\\DuiLib.lib")
+#       if defined(_M_ARM64) || defined(_M_ARM64EC)
+#           pragma comment(lib, "..\\Lib\\ARM64\\DuiLib.lib")
+#       else
+#           pragma comment(lib, "..\\Lib\\DuiLib.lib")
+#       endif
 #   endif
 #endif
 
