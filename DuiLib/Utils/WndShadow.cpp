@@ -31,6 +31,29 @@
 #include <crtdbg.h>
 #include <math.h>
 
+#if defined(_M_ARM64) || defined(__aarch64__)
+#include <arm_neon.h>
+
+// Lanewise unsigned max of the running shadow buffer against the blur kernel,
+// used by CWndShadow::MakeShadow's border-blur pass (runs continuously during
+// live window resize, over border spans that are routinely >=16 pixels wide).
+// vmaxq_u32 is an exact lanewise unsigned max, so this is bit-identical to the
+// scalar "if (*pPixel < *pKernelPixel) *pPixel = *pKernelPixel;" loop below.
+static inline void MaxBlendRowNeon(UINT32* pPixel, const UINT32* pKernelPixel, int nCount)
+{
+	int l = 0;
+	for (; l + 4 <= nCount; l += 4) {
+		uint32x4_t vDst = vld1q_u32(pPixel + l);
+		uint32x4_t vSrc = vld1q_u32(pKernelPixel + l);
+		vst1q_u32(pPixel + l, vmaxq_u32(vDst, vSrc));
+	}
+	for (; l < nCount; l++) {
+		if (pPixel[l] < pKernelPixel[l])
+			pPixel[l] = pKernelPixel[l];
+	}
+}
+#endif
+
 // Some extra work to make this work in VC++ 6.0
 
 // walk around the for iterator scope bug of VC++6.0
@@ -536,6 +559,9 @@ void CWndShadow::MakeShadow(UINT32 *pShadBits, HWND hParent, RECT *rcParent)
 					UINT32 *pPixel = pShadBits +
 						(szShadow.cy - i - 1 + nKernelSize - k) * szShadow.cx + j - nKernelSize;
 					UINT32 *pKernelPixel = pKernel + k * (2 * nKernelSize + 1);
+#if defined(_M_ARM64) || defined(__aarch64__)
+					MaxBlendRowNeon(pPixel, pKernelPixel, 2 * nKernelSize + 1);
+#else
 					for(int l = 0; l <= 2 * nKernelSize; l++)
 					{
 						if(*pPixel < *pKernelPixel)
@@ -543,6 +569,7 @@ void CWndShadow::MakeShadow(UINT32 *pShadBits, HWND hParent, RECT *rcParent)
 						pPixel++;
 						pKernelPixel++;
 					}
+#endif
 				}
 			}	// for() start of line
 
@@ -556,6 +583,9 @@ void CWndShadow::MakeShadow(UINT32 *pShadBits, HWND hParent, RECT *rcParent)
 					UINT32 *pPixel = pShadBits +
 						(szShadow.cy - i - 1 + nKernelSize - k) * szShadow.cx + j - nKernelSize;
 					UINT32 *pKernelPixel = pKernel + k * (2 * nKernelSize + 1);
+#if defined(_M_ARM64) || defined(__aarch64__)
+					MaxBlendRowNeon(pPixel, pKernelPixel, 2 * nKernelSize + 1);
+#else
 					for(int l = 0; l <= 2 * nKernelSize; l++)
 					{
 						if(*pPixel < *pKernelPixel)
@@ -563,6 +593,7 @@ void CWndShadow::MakeShadow(UINT32 *pShadBits, HWND hParent, RECT *rcParent)
 						pPixel++;
 						pKernelPixel++;
 					}
+#endif
 				}
 			}	// for() end of line
 
