@@ -717,14 +717,26 @@ static int stbi__sse2_available()
 #endif
 
 // ARM NEON
+// ARM64: enable upstream's own NEON JPEG decode kernels (already vendored in
+// this file, previously dormant behind the opt-in STBI_NEON flag) the same
+// way STBI_SSE2 is auto-enabled above for x86/x64. NEON is unconditionally
+// available on every Windows-on-ARM SKU, so no runtime feature check is needed.
+#if (defined(_M_ARM64) || defined(__aarch64__)) && !defined(STBI_NO_SIMD) && !defined(STBI_NEON)
+#define STBI_NEON
+#endif
+
 #if defined(STBI_NO_SIMD) && defined(STBI_NEON)
 #undef STBI_NEON
 #endif
 
 #ifdef STBI_NEON
 #include <arm_neon.h>
+#ifdef _MSC_VER
+#define STBI_SIMD_ALIGN(type, name) __declspec(align(16)) type name
+#else
 // assume GCC or Clang on ARM targets
 #define STBI_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
+#endif
 #endif
 
 #ifndef STBI_SIMD_ALIGN
