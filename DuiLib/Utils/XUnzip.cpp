@@ -2359,10 +2359,29 @@ const uLong * get_crc_table()
 #define CRC_DO4(buf)  CRC_DO2(buf); CRC_DO2(buf);
 #define CRC_DO8(buf)  CRC_DO4(buf); CRC_DO4(buf);
 
+#if defined(_M_ARM64) || defined(__aarch64__)
+#include <intrin.h>
+#endif
+
 uLong ucrc32(uLong crc, const Byte *buf, uInt len)
 { if (buf == Z_NULL) return 0L;
   crc = crc ^ 0xffffffffL;
+#if defined(_M_ARM64) || defined(__aarch64__)
+  // Windows ARM64 implements the IEEE 802.3 (zip/gzip) CRC-32 polynomial as a
+  // native instruction (__crc32d), unconditionally available on every
+  // Windows-on-ARM SKU. It is designed to be drop-in compatible with the
+  // reflected table-based update below: __crc32d(crc, v) applied to 8
+  // little-endian bytes is bit-identical to 8 sequential CRC_DO1() calls.
+  while (len >= 8) {
+     unsigned __int64 v;
+     memcpy(&v, buf, 8); // avoid unaligned-load UB; compiles to a plain load
+     crc = __crc32d((unsigned __int32)crc, v);
+     buf += 8;
+     len -= 8;
+  }
+#else
   while (len >= 8)  {CRC_DO8(buf); len -= 8;}
+#endif
   if (len) do {CRC_DO1(buf);} while (--len);
   return crc ^ 0xffffffffL;
 }
