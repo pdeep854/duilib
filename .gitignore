@@ -31,3 +31,10 @@ QQDemo/Debug/mt.dep
 
 # wos-porter agent scratch state (not part of the port)
 .copilot/
+
+# ARM64 build output and intermediate directories
+DuiLib/Build/
+Lib/
+bin/ARM64/
+*/ARM64/
+build_arm64_release.log
